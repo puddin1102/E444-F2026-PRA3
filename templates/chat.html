@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Flasky Chatbot{% endblock %}
+
+{% block page_content %}
+<div class="page-header">
+    <h1>Chatbot</h1>
+    <p>Welcome, {{ name }}. Tell the chatbot your name, then ask it to recall it.</p>
+</div>
+
+<div id="conversation" class="well" aria-live="polite">
+    <p><strong>Bot:</strong> Say hello or tell me, “My name is Alice.”</p>
+</div>
+
+<form id="chat-form" class="form-inline">
+    <div class="form-group">
+        <label class="sr-only" for="message">Message</label>
+        <input id="message" class="form-control" type="text" placeholder="Type a message" required autofocus>
+    </div>
+    <button class="btn btn-primary" type="submit">Send</button>
+</form>
+
+<form action="{{ url_for('logout') }}" method="post" style="margin-top: 20px;">
+    <button class="btn btn-default" type="submit">Logout</button>
+</form>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+const form = document.getElementById('chat-form');
+const input = document.getElementById('message');
+const conversation = document.getElementById('conversation');
+
+function addMessage(speaker, message) {
+    const paragraph = document.createElement('p');
+    const label = document.createElement('strong');
+    label.textContent = `${speaker}: `;
+    paragraph.appendChild(label);
+    paragraph.appendChild(document.createTextNode(message));
+    conversation.appendChild(paragraph);
+}
+
+form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const message = input.value.trim();
+    if (!message) return;
+
+    addMessage('You', message);
+    input.value = '';
+
+    try {
+        const response = await fetch('{{ url_for("chat") }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({message}),
+        });
+        const data = await response.json();
+        addMessage('Bot', data.reply || 'Something went wrong.');
+    } catch (error) {
+        addMessage('Bot', 'I could not reach the server.');
+    }
+});
+</script>
+{% endblock %}
